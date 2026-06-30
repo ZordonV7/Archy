@@ -1,0 +1,82 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Archy",
+  "version": "0.1.0",
+  "identifier": "com.archy.app",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "mascot",
+        "title": "Archy",
+        "url": "index.html#/mascot",
+        "width": 180,
+        "height": 240,
+        "x": 50,
+        "y": 600,
+        "transparent": true,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "resizable": false,
+        "minimizable": true,
+        "maximizable": false,
+        "skipTaskbar": true,
+        "shadow": false
+      },
+      {
+        "label": "bubble",
+        "title": "Archy Bubble",
+        "url": "index.html#/bubble",
+        "width": 300,
+        "height": 90,
+        "x": 70,
+        "y": 510,
+        "transparent": true,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "resizable": false,
+        "minimizable": false,
+        "maximizable": false,
+        "skipTaskbar": true,
+        "shadow": false,
+        "visible": false
+      },
+      {
+        "label": "dashboard",
+        "title": "Archy Dashboard",
+        "url": "index.html#/dashboard",
+        "width": 420,
+        "height": 700,
+        "x": 1490,
+        "y": 30,
+        "transparent": true,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "resizable": true,
+        "minimizable": true,
+        "maximizable": false,
+        "skipTaskbar": false,
+        "shadow": true,
+        "visible": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": []
+  },
+  "plugins": {
+    "shell": {
+      "open": true
+    }
+  }
+}

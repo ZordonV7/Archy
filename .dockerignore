@@ -1,0 +1,32 @@
+# Don't ship dev / build artifacts in the Docker image.
+.git/
+.github/
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Frontend lives in a separate deployment (Vercel) — don't ship in backend image.
+frontend/
+
+# Local dev databases
+*.db
+*.db-journal
+archy.db
+
+# Env files (use real env vars in the host, don't bake secrets into the image)
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

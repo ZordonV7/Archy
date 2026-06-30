@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "archy"
+version = "0.2.0"
+description = "Archy — multi-agent scheduling companion (deterministic core, LLM advisors)."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Archy Team" }]
+license = { text = "MIT" }
+
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "httpx>=0.27",
+    "loguru>=0.7",
+    "typer>=0.12",
+    "python-multipart>=0.0.9",
+    "websockets>=12",
+    "tzlocal>=5.2",
+    "google-auth-oauthlib>=1.2",
+    "google-api-python-client>=2.130",
+    # PostgreSQL driver — only used when ARCHY_DB_URL is set (web deployment).
+    # Desktop (SQLite) deployment works without it. The -binary variant bundles
+    # libpq so no system-level postgres client libs are required.
+    "psycopg2-binary>=2.9",
+    # Session cookie signing (used by Starlette SessionMiddleware for auth).
+    # Bundled with Starlette but not declared as a hard dep, so we list it.
+    "itsdangerous>=2.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "httpx>=0.27",
+    "ruff>=0.5",
+]
+
+[project.scripts]
+archy = "archy.cli:app"
+
+[tool.setuptools.packages.find]
+include = ["archy*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

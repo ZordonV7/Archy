@@ -1,0 +1,46 @@
+# Render Blueprint for Archy web deployment.
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Quick start:
+#   1. Push this repo to GitHub
+#   2. In Render dashboard: New → Blueprint → pick the repo
+#   3. Render will read this file and create:
+#      - 1 Web Service (the FastAPI backend, free tier)
+#   4. After deploy, set these env vars in the Render dashboard:
+#      - GEMINI_API_KEY (required if ARCHY_MODE=online)
+#      - ARCHY_DB_URL (Neon connection string — see below)
+#      - ARCHY_ALLOWED_ORIGINS (your Vercel URL, e.g. https://archy.vercel.app)
+#
+# Database: this blueprint does NOT create a Render Postgres instance because
+# Neon (https://neon.tech) offers a more generous free tier (0.5 GB storage,
+# scales to zero, branching). Create a Neon project, copy the connection string,
+# paste it as ARCHY_DB_URL in the Render dashboard.
+#
+# Frontend: deploy the React app separately to Vercel — see frontend/vercel.json.
+
+services:
+  - type: web
+    name: archy-backend
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: ARCHY_MODE
+        value: online
+      - key: ARCHY_HOST
+        value: 0.0.0.0
+      - key: ARCHY_PORT
+        value: 8000
+      - key: ARCHY_DB_URL
+        sync: false  # Set manually in dashboard — your Neon connection string
+      - key: GEMINI_API_KEY
+        sync: false  # Set manually in dashboard
+      - key: ARCHY_ALLOWED_ORIGINS
+        sync: false  # Set manually — your Vercel URL, e.g. https://archy.vercel.app
+      - key: ARCHY_CALENDAR_SYNC_ENABLED
+        value: "false"
+      - key: ARCHY_DAILY_BRIEF_ENABLED
+        value: "false"
