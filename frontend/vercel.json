@@ -1,0 +1,20 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm install && npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://archy-backend.onrender.com/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "comment_ws": "WebSocket (/events) CANNOT be proxied by Vercel rewrites. Set VITE_WS_BASE_URL=wss://archy-backend.onrender.com in Vercel env vars so the frontend connects to Render directly.",
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ]
+}
+
