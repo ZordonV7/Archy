@@ -1,11 +1,12 @@
 {
+  
   "name": "archy-frontend",
   "version": "0.2.0",
   "description": "Archy — Tauri desktop app + Vercel web app (retro TV mascot)",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npx vite build",
     "preview": "vite preview",
     "tauri": "tauri"
   },
