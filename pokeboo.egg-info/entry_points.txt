@@ -1,2 +1,0 @@
-[console_scripts]
-pokeboo = pokeboo.cli:app

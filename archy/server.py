@@ -131,7 +131,10 @@ def create_app(
         session_cookie="archy_session",
         max_age=30 * 24 * 60 * 60,  # 30 days
         same_site="lax",
-        https_only=not settings.allowed_origins.startswith("http://localhost"),  # secure in prod
+        # https_only: True only when specific origins are configured (i.e. production).
+        # When allowed_origins="*" (desktop/local-dev default), cookies must work
+        # over plain HTTP, so https_only must be False.
+        https_only=(origins_str != "*" and not origins_str.startswith("http://localhost")),
     )
 
     def _assistant() -> Archy:

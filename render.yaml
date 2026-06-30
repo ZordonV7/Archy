@@ -40,6 +40,12 @@ services:
         sync: false  # Set manually in dashboard
       - key: ARCHY_ALLOWED_ORIGINS
         sync: false  # Set manually — your Vercel URL, e.g. https://archy.vercel.app
+      - key: ARCHY_SECRET_KEY
+        sync: false  # Generate: python -c "import secrets; print(secrets.token_urlsafe(32))"
+      - key: ARCHY_FRONTEND_URL
+        sync: false  # Your Vercel URL, e.g. https://archy.vercel.app (used for OAuth redirect)
+      - key: ARCHY_REQUIRE_AUTH
+        value: "false"  # Set to "true" after verifying the OAuth flow works
       - key: ARCHY_CALENDAR_SYNC_ENABLED
         value: "false"
       - key: ARCHY_DAILY_BRIEF_ENABLED
