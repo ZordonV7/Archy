@@ -6,7 +6,7 @@ import { useEventStore } from "../../stores/eventStore";
 import { useAudioRecorder } from "../../hooks/useAudioRecorder";
 import { useTTS } from "../../hooks/useTTS";
 import { API_BASE } from "../../lib/apiConfig";
-import RetroTVMascot from "./RetroTVMascot";
+import RiveMascot from "./RiveMascot";
 import { useRetroMascotMood } from "./useRetroMascotMood";
 
 export default function MascotWindow() {
@@ -152,7 +152,7 @@ export default function MascotWindow() {
           whileHover={{ scale: 1.08, cursor: "pointer" }}
           whileTap={{ scale: 0.95 }}
         >
-          <RetroTVMascot mood={retroMood} />
+          <RiveMascot mood={retroMood} />
         </motion.div>
 
         {/* Vertical energy bar */}

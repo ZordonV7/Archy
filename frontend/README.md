@@ -1,5 +1,11 @@
 # Archy Frontend — Tauri + React
 
+> ⚠️ **Concept in development.** The live/hosted web version is not currently
+> working. Development focus right now is the **Tauri desktop app** below —
+> that's the path that actually works today. "Browser Mode" is fine for local
+> UI development against a backend running on `localhost`, but it is not the
+> supported deployment target.
+
 Desktop app with two windows:
 1. **Mascot overlay** — small, transparent, always-on-top, draggable
 2. **Dashboard** — full window with tasks, schedule, settings

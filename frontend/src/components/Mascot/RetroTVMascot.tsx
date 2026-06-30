@@ -703,6 +703,13 @@ export default function RetroTVMascot({ mood }: { mood: RetroMood }) {
     let raf = 0;
 
     const animate = () => {
+      // Skip work while the tab/window is hidden — the canvas isn't being
+      // shown anyway, so there's no point burning CPU on 60fps glow draws.
+      if (document.visibilityState === "hidden") {
+        raf = requestAnimationFrame(animate);
+        return;
+      }
+
       tRef.current += 0.016;
       const t = tRef.current;
       moodStateRef.current.transitionT = Math.min(

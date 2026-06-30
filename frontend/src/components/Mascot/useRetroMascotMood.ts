@@ -8,8 +8,10 @@ import type { RetroMood } from "./RetroTVMascot";
  * and whether Archy is currently speaking.
  *
  * Priority order (highest first):
- *  1. WebSocket disconnected          → panic    (error state — red, shaking, static)
- *  2. Loading (initial mount)         → waking   (yellow, yawning, booting)
+ *  1. WebSocket disconnected past the initial grace period
+ *                                     → panic    (error state — red, shaking, static)
+ *  2. Loading (still within the initial connect grace period,
+ *     or backend hasn't responded yet) → waking  (yellow, yawning, booting)
  *  3. mood = critical_panic           → panic    (red, X eyes, static)
  *  4. risk label = "critical"         → panic    (deadline about to blow)
  *  5. energy = depleted               → sleeping (blue, closed eyes, Zzz)
@@ -23,6 +25,13 @@ import type { RetroMood } from "./RetroTVMascot";
  * This hook also tracks "isTalking" — when a new assistantMessage arrives,
  * the mascot briefly shows the happy mood (Archy is encouraging the user).
  */
+// How long to give the WebSocket to complete its first connection attempt
+// before treating "not connected yet" as an actual error. Without this,
+// `connected` starts `false` on every mount and the mascot flashes panic
+// (red, shaking, static) for a beat on every page load, even when the
+// backend is healthy and the socket connects a few hundred ms later.
+const INITIAL_CONNECT_GRACE_MS = 4000;
+
 export function useRetroMascotMood(): RetroMood {
   const connected = useEventStore((s) => s.connected);
   const moodLabel = useEventStore((s) => s.mood?.label ?? null);
@@ -40,16 +49,28 @@ export function useRetroMascotMood(): RetroMood {
     }
   }, [assistantMessage]);
 
+  // Grace window — true only until either the socket connects or the
+  // timeout elapses, whichever comes first.
+  const [inGracePeriod, setInGracePeriod] = useState(true);
+  useEffect(() => {
+    if (connected) {
+      setInGracePeriod(false);
+      return;
+    }
+    const t = setTimeout(() => setInGracePeriod(false), INITIAL_CONNECT_GRACE_MS);
+    return () => clearTimeout(t);
+  }, [connected]);
+
   return useMemo<RetroMood>(() => {
     return deriveRetroMood({
       connected,
-      loading: false,
+      loading: !connected && inGracePeriod,
       moodLabel,
       energyLabel,
       riskLabel,
       isTalking,
     });
-  }, [connected, moodLabel, energyLabel, riskLabel, isTalking]);
+  }, [connected, inGracePeriod, moodLabel, energyLabel, riskLabel, isTalking]);
 }
 
 /** Pure derivation function — exported for testing. */

@@ -1,37 +1,232 @@
-# Archy — Adorable Multi-Agent Scheduling Companion
+# Archy — Adorable Multi-Agent Scheduling Backend
+
+> ⚠️ **Status: concept in development.** The hosted/live deployment (Vercel
+> frontend + Render backend) described in this repo is **not currently
+> working/maintained** — treat `vercel.json`, `render.yaml`, and the web
+> deployment instructions below as a reference for a *future* web rollout,
+> not a working live demo. Active development is currently focused on the
+> **Tauri desktop app** (see `frontend/README.md` → "Desktop App (Tauri)").
+> Run things locally with `python run.py serve` + `npm run tauri dev` for
+> the working experience today.
 
 Archy is a chubby, adorable companion who gently helps you follow your schedule. She runs four specialist agents (STT, Classifier, Planner, Mood), supervises their proposals, vetoes the ones that don't fit your current state, and translates everything into warm, motivating speech.
 
-The mascot is a **retro CRT TV character** (`RetroTVMascot`) with 7 canvas-animated moods (happy / sad / panic / upset / thinking / sleeping / waking) — drawn frame-by-frame in vanilla canvas, no Rive or external animation runtime required.
-
-This repo contains:
-- **`archy/`** — Python FastAPI backend (multi-agent scheduler, deterministic core, Gemini LLM advisors)
-- **`frontend/`** — React + Vite frontend (also ships as a Tauri 2 desktop app)
-- **`tests/`** — 67 tests across 7 files
-- **`Dockerfile`** + **`render.yaml`** — one-click Render deploy
-- **`frontend/vercel.json`** — Vercel deploy config (Root Directory = `frontend`)
-
-## Deployment
-
-**👉 Full guide: [DEPLOYMENT.md](DEPLOYMENT.md)** — covers Vercel + Render + Neon (web), Tauri (desktop), and local dev.
-
-| Target | What | Time to live |
-|--------|------|--------------|
-| **Web (Vercel)** | Frontend only — talks to Render backend | ~5 min |
-| **Web (Render)** | Backend (FastAPI) | ~5 min |
-| **Web (Neon)** | Postgres database | ~2 min |
-| **Desktop (Tauri)** | Native installer (.msi / .dmg / .AppImage) | ~10 min build |
-| **Local dev** | Both servers on localhost | ~2 min |
-
-The Tauri config (`frontend/src-tauri/tauri.conf.json`) opens three OS windows by default: a small mascot window (bottom-left), a speech bubble window above it, and a larger dashboard window on the right.
+This is the Python backend. The Rust overlay UI (the actual chubby sprite that waddles across your screen) will live in a sibling project and talk to this server over HTTP/WebSocket.
 
 ---
 
-## Quick Start (local dev)
+## Architecture
+
+```
+                         ┌──────────────────────────┐
+                         │          USER            │
+                         │  voice / text / UI tap   │
+                         └────────────┬─────────────┘
+                                      │
+                                      ▼
+                         ┌──────────────────────────┐
+                         │     ARCHY (Manager)      │
+                         │  ──────────────────────  │
+                         │  • Persona: chubby,      │
+                         │    adorable, motivational│
+                         │  • Interpreter: turns    │
+                         │    structured agent data │
+                         │    → friendly user speech│
+                         │  • Supervisor: relevancy │
+                         │    score + veto power    │
+                         │  • Single source of      │
+                         │    personality           │
+                         └─┬──────┬──────┬──────┬──┘
+                           │      │      │      │
+              ┌────────────┘      │      │      └────────────┐
+              ▼                   ▼      ▼                   ▼
+   ┌─────────────────┐  ┌──────────────┐  ┌──────────────┐
+   │  STT Agent      │  │ Classifier   │  │  Mood Agent  │
+   │  (audio→text    │  │ + Priorit.   │  │ (analyst +   │
+   │   via Gemini    │  │ Agent        │  │  advisor)    │
+   │   native audio) │  │              │  │              │
+   └─────────────────┘  └──────┬───────┘  └──────┬───────┘
+                               │                 │
+                               ▼                 │
+                        ┌──────────────┐         │
+                        │ Planning     │ ◀───────┘
+                        │ Agent        │  (mood influences plan)
+                        │ (advisory)   │
+                        └──────┬───────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │  DETERMINISTIC CORE │  ← no LLM, fully testable
+                    │  • Rule-based       │
+                    │    scheduler (final │
+                    │    decider)         │
+                    │  • Rule-based mood  │
+                    │    engine (final    │
+                    │    decider)         │
+                    │  • Energy engine    │
+                    │  • Risk engine      │
+                    │  • SQLite / Postgres│
+                    │    storage + full   │
+                    │    audit trail      │
+                    └─────────────────────┘
+```
+
+### Key invariants
+
+1. **Agents never speak English to each other** — only structured JSON via `AgentProposal`
+2. **Archy is the ONLY entity that produces user-facing natural language** — via the Interpreter
+3. **LLM agents are advisory; rule-based core is the final decider** — deterministic, testable
+4. **Every proposal is evaluated** — Archy assigns a `relevancy_score`; if it exceeds threshold, accept; else reject with constraints and ask for revision
+5. **Every conflict is persisted + published** — full audit trail in SQLite + WebSocket events
+
+---
+
+## Project Layout
+
+```
+archy/
+├── pyproject.toml
+├── .env.example
+├── run.py                       # `python run.py serve`
+├── archy/
+│   ├── __main__.py              # `python -m archy serve`
+│   ├── config.py                # pydantic-settings
+│   ├── server.py                # FastAPI + WebSocket hub
+│   ├── cli.py                   # `archy` CLI
+│   │
+│   ├── contracts/
+│   │   └── messages.py          # ALL inter-agent message types (the protocol)
+│   │
+│   ├── gemini/
+│   │   ├── client.py            # Shared async Gemini client (text + audio + JSON)
+│   │   ├── tts_client.py        # Gemini TTS client (Archy's voice)
+│   │   ├── live_client.py       # Live STT (real-time mic input)
+│   │   ├── embeddings.py        # Semantic search embeddings
+│   │   └── router.py            # Model router (light/premium tiers)
+│   │
+│   ├── agents/                  ← One file per agent
+│   │   ├── base.py              # Agent protocol
+│   │   ├── stt_agent.py         # SpeechToTextAgent (Gemini native audio)
+│   │   ├── classifier_agent.py  # ClassifierAgent (priority/complexity/deadline)
+│   │   ├── planner_agent.py     # PlannerAgent (advisory ordering)
+│   │   ├── mood_agent.py        # MoodAgent (analyst + advisor)
+│   │   └── decomposer_agent.py  # DecomposerAgent (auto-split complex tasks)
+│   │
+│   ├── core/                    ← Deterministic deciders (no LLM)
+│   │   ├── scheduler.py         # GreedyScheduler (final slot committer)
+│   │   ├── mood_engine.py       # MoodEngine (final mood scorer)
+│   │   ├── energy_engine.py     # EnergyEngine (execution capacity)
+│   │   ├── risk_engine.py       # RiskEngine (deadline miss probability)
+│   │   ├── policy_engine.py     # PolicyEngine (formal constraints)
+│   │   ├── failure_simulator.py # Simulate current vs optimized schedule
+│   │   ├── scheduler_trainer.py # Learns user patterns over time
+│   │   ├── adaptive_notifications.py
+│   │   ├── productivity_model.py
+│   │   ├── storage.py           # SQLite repo (full audit, 16+ tables)
+│   │   └── storage_postgres.py  # PostgreSQL repo (web deployment)
+│   │
+│   ├── application/             ← Application layer
+│   │   ├── event_bus.py         # Unified event bus
+│   │   ├── context_builder.py   # 7-layer AgentContext builder
+│   │   ├── scheduler_v2.py      # Mood + energy + context-switch aware
+│   │   └── proposal_manager.py  # Permissioned action gate
+│   │
+│   ├── integrations/            ← External services
+│   │   ├── auth.py              # Google OAuth flow
+│   │   ├── calendar_client.py   # Google Calendar sync
+│   │   ├── calendar_subscriber.py
+│   │   └── docs_client.py       # Google Docs daily briefs
+│   │
+│   └── assistant/               ← THE MANAGER
+│       ├── persona.py           # Chubby adorable personality prompt
+│       ├── interpreter.py       # JSON → user speech (only NL source)
+│       └── manager.py           # Orchestrator + relevancy scoring + veto
+│
+└── tests/
+    ├── test_scheduler.py        # 7 tests — scheduler rules
+    ├── test_mood_engine.py      # 8 tests — mood delta rules
+    ├── test_energy_engine.py    # 9 tests — energy deltas
+    ├── test_risk_engine.py      # 9 tests — deadline risk
+    ├── test_policy_engine.py    # 13 tests — policy constraints
+    ├── test_application.py      # 18 tests — application layer
+    └── test_veto.py             # 3 tests — Archy's veto + conflict logging
+```
+
+---
+
+## The Veto Mechanism
+
+Every agent proposal flows through this loop:
+
+```
+Agent.run() → AgentProposal (with self_confidence)
+                    │
+                    ▼
+        Archy._evaluate_proposal()
+                    │
+                    ▼
+        ┌───── relevancy_score > threshold? ─────┐
+        │                                         │
+       YES                                       NO
+        │                                         │
+        ▼                                         ▼
+     ACCEPT                              REJECT + constraints
+        │                                         │
+        │                                         ▼
+        │                              Agent.revise() with constraints
+        │                                         │
+        │                                         ▼
+        │                              (loop, max_negotiation_rounds)
+        │                                         │
+        │                                         ▼
+        │                              ESCALATE → ConflictEvent persisted
+        │
+        ▼
+  Rule-based core commits the decision
+```
+
+### Current veto rules (in `assistant/manager.py`)
+
+| User mood | Agent | Proposal shape | Veto? |
+|---|---|---|---|
+| critical_panic | Planner | > 2 slots | YES — constrain to 2 slots |
+| critical_panic | Planner | any slot > 45 min | YES — constrain to 45 min max |
+| drift_alert | Planner | > 4 slots | YES — constrain to 4 slots |
+| any | Classifier | priority < 30 + no deadline | Penalize (−10) |
+| any | any | self_confidence low | Penalize |
+
+Threshold is configurable: `ARCHY_RELEVANCY_THRESHOLD=65` (default).
+
+### Conflict events
+
+Every rejection produces a `ConflictEvent` that's:
+1. Persisted to SQLite (`conflict_events` table)
+2. Published via WebSocket (`conflict.event` event type)
+3. Surfaced to Archy's interpreter so she can gently mention the adjustment
+
+Example WebSocket event:
+```json
+{
+  "type": "conflict.event",
+  "payload": {
+    "agent_name": "planner",
+    "proposal_type": "schedule",
+    "rounds": 2,
+    "resolution": "revised",
+    "final_outcome": "Agent revised proposal per Archy's constraints."
+  }
+}
+```
+
+The Rust overlay can later show these as "Archy tweaked the plan to make it easier for you" — full transparency into the multi-agent negotiation.
+
+---
+
+## Quick Start
 
 > **Python 3.11+ required.**
 
-### Backend
+### Setup
 
 ```bash
 # Linux / macOS
@@ -247,10 +442,9 @@ All settings via env vars (prefix `ARCHY_`) or `.env` file:
   with a Gemini call for richer reasoning.
 - **PlannerAgent's `ordered_task_ids`** — wire through to `SchedulerV2.plan(preferred_order=...)`
   (hook is already there in `_extract_preferred_order`).
-- **More retro TV moods** — the canvas mascot (`RetroTVMascot.tsx`) currently
-  ships 7 moods. New ones (e.g. `celebrating`, `curious`, `proud`) are pure
-  additions — add a new `RetroMood` value, extend `moodDefs`, and add the eye/
-  mouth/FX drawing branches.
+- **Rive mascot** — the frontend ships a canvas-based RetroTVMascot today; a
+  `.riv` Rive file (with proper state machine for the 7 moods) would let
+  designers iterate on the animation without touching code.
 
 ---
 
