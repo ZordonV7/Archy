@@ -1,16 +1,15 @@
 {
   "name": "archy-frontend",
   "version": "0.2.0",
-  "description": "Archy desktop app — Tauri + React + Rive (with canvas fallback)",
+  "description": "Archy — Tauri desktop app + Vercel web app (retro TV mascot)",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "tauri": "tauri"
   },
   "dependencies": {
-    "@rive-app/react-canvas": "^4.17.0",
     "framer-motion": "^11.0.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
@@ -26,3 +25,4 @@
     "vite": "^5.4.0"
   }
 }
+
