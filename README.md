@@ -1,17 +1,12 @@
 # Archy — Adorable Multi-Agent Scheduling Backend
 
-> ⚠️ **Status: concept in development.** The hosted/live deployment (Vercel
-> frontend + Render backend) described in this repo is **not currently
-> working/maintained** — treat `vercel.json`, `render.yaml`, and the web
-> deployment instructions below as a reference for a *future* web rollout,
-> not a working live demo. Active development is currently focused on the
+> ⚠️ **Status: concept in development.** The deployment in Vercel is **not currently working and maintained**
 > **Tauri desktop app** (see `frontend/README.md` → "Desktop App (Tauri)").
-> Run things locally with `python run.py serve` + `npm run tauri dev` for
-> the working experience today.
+> Run things locally with `python run.py serve` + `npm run tauri dev`
 
-Archy is a chubby, adorable companion who gently helps you follow your schedule. She runs four specialist agents (STT, Classifier, Planner, Mood), supervises their proposals, vetoes the ones that don't fit your current state, and translates everything into warm, motivating speech.
+Archy is an adorable companion who gently helps you follow your schedule. She runs four specialist agents (STT, Classifier, Planner, Mood), supervises their proposals, vetoes the ones that don't fit your current state, and translates everything into warm, motivating speech.
 
-This is the Python backend. The Rust overlay UI (the actual chubby sprite that waddles across your screen) will live in a sibling project and talk to this server over HTTP/WebSocket.
+This is the Python backend. The Rust overlay UI (the actual sprite that waddles across your screen) will live in a sibling project and talk to this server over HTTP/WebSocket.
 
 ---
 
